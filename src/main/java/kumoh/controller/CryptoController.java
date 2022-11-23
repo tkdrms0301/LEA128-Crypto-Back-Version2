@@ -10,6 +10,8 @@ import kumoh.dto.decrypt.ResponseDecryptObjectPathDto;
 import kumoh.dto.encrypt.EncryptFilePathDto;
 import kumoh.dto.encrypt.ResponseEncryptFilePathDto;
 import kumoh.dto.encrypt.ResponseEncryptObjectPathDto;
+import kumoh.dto.multi.MultiFilePathDTO;
+import kumoh.dto.multi.MultipleFilePathDto;
 import kumoh.dto.request.RequestDecryptObjectDto;
 import kumoh.dto.request.RequestEncryptObjectDto;
 import kumoh.service.CryptoService;
@@ -132,6 +134,37 @@ public class CryptoController {
     private void setFileTransferHeader(HttpServletResponse response, String filename){
         response.setHeader("Content-Disposition", "attachment; filename=\"" + URLEncoder.encode(filename, StandardCharsets.UTF_8) + "\";");
         response.setHeader("Content-Transfer-Encoding", "binary");
+    }
+
+    @PostMapping("/encrypt-multiple-file/path")
+    public ResponseEntity<?> encryptMultipleFilePath(@RequestBody MultipleFilePathDto multipleFilePathDto){
+        if (!usbConnect.isLogin()) {
+            return ResponseEntity.ok().body(new ResponseAuthDto(false));
+        }
+        return ResponseEntity.ok().body(cryptoService.fileNameList(multipleFilePathDto.getPath()));
+    }
+
+    @PostMapping("/decrypt-multiple-file/path")
+    public ResponseEntity<?> decryptMultipleFilePath(@RequestBody MultipleFilePathDto multipleFilePathDto){
+        if (!usbConnect.isLogin()) {
+            return ResponseEntity.ok().body(new ResponseAuthDto(false));
+        }
+        return ResponseEntity.ok().body(cryptoService.fileNameList(multipleFilePathDto.getPath()));
+    }
+
+    @PostMapping("/encrypt-multiple-file/run")
+    public ResponseEntity<?> encryptMultipleFile(@RequestBody MultiFilePathDTO multipleFilePathDTO){
+        if (!usbConnect.isLogin()) {
+            return ResponseEntity.ok().body(new ResponseAuthDto(false));
+        }
+        return ResponseEntity.ok().body(cryptoService.encryptMultipleFile(multipleFilePathDTO));
+    }
+    @PostMapping("/decrypt-multiple-file/run")
+    public ResponseEntity<?> decryptMultipleFile(@RequestBody MultiFilePathDTO multipleFilePathDTO){
+        if (!usbConnect.isLogin()) {
+            return ResponseEntity.ok().body(new ResponseAuthDto(false));
+        }
+        return ResponseEntity.ok().body(cryptoService.decryptMultipleFile(multipleFilePathDTO));
     }
 
 }
