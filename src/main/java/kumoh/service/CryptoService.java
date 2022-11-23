@@ -10,10 +10,12 @@ import kumoh.dto.ResponseSetFilePathDto;
 import kumoh.dto.connect.ResponseConnectDto;
 import kumoh.dto.decrypt.DecryptFilePathDto;
 import kumoh.dto.encrypt.EncryptFilePathDto;
+import kumoh.dto.multi.*;
 import kumoh.util.LEA128_CTR_decrypt;
 import kumoh.util.LEA128_CTR_encrypt;
 import kumoh.util.LEA128_key;
 import kumoh.util.directory.DirectoryValidator;
+import kumoh.util.file.FileDirList;
 import kumoh.util.fileEncryption.FileDecryptionDir;
 import kumoh.util.fileEncryption.FileEncryptionDir;
 import kumoh.util.log.LogDirBuilder;
@@ -51,6 +53,7 @@ public class CryptoService {
     private final FileDecryptionDir fileDecryptionDir;
     private final FileDecDirInfo fileDecDirInfo;
 
+    private final FileDirList fileDirList;
     private static String progressPath = "file/";
 
     private static String filePath = "file/";
@@ -273,4 +276,109 @@ public class CryptoService {
 
         return ResponseEntity.ok(new DecryptFilePathDto(dir));
     }
+
+    public boolean encryptFileByPathUsingLEA128(String path) {
+        File file = new File(path);
+        if(file.exists()){
+            String encryptPath = fileEncryptionDir.getDir() + "/Encoding_" + file.getName();
+            try {
+                encrypt.file(file, encryptPath, key);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+            saveLog(file.getName(), "author");
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public boolean decryptFileByPathUsingLEA128(String path) {
+        File file = new File(path);
+        if(file.exists()){
+            String encryptPath = fileDecryptionDir.getDir() + "/Decoding_" + file.getName();
+            try {
+                decrypt.file(file, encryptPath, key);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+            saveLog(file.getName(), "author");
+            return true;
+        }else{
+            return false;
+        }
+
+    }
+
+    public DirListDto fileNameList(String folderPath){
+        List<String> newFileNameList = fileDirList.fileDirNameList(folderPath);
+        List<FileNameDto> fileNameDtoList = new ArrayList<>();
+        for (String fileName : newFileNameList) {
+            fileNameDtoList.add(new FileNameDto(fileName));
+        }
+        return new DirListDto(fileNameDtoList);
+    }
+
+    public ResponseEntity<?> encryptMultipleFile(MultiFilePathDTO multipleFilePathDTO) {
+
+        MultiFilePathResponseDTO multipleFilePathResponseDTO = new MultiFilePathResponseDTO();
+
+        for (MultiFileEachDTO multiFileEachDTO : multipleFilePathDTO.getData()) {
+            MultiFileEachResponseDTO multiFileEachResponseDTO = new MultiFileEachResponseDTO(multiFileEachDTO.getIndex(), multiFileEachDTO.getFileName());
+            if(encryptFileByPathUsingLEA128(multiFileEachDTO.getFileName())){
+                multiFileEachResponseDTO.setSuccess(true);
+            }else{
+                multiFileEachResponseDTO.setSuccess(false);
+
+                System.gc();
+                String[] split = multiFileEachResponseDTO.getFileName().split("\\\\");
+                String newPath = "";
+                for (int i = 0; i < split.length; i++) {
+                    if (i == split.length - 1)
+                        newPath += File.separator + "Encoding_";
+                    else
+                        newPath += split[i];
+                }
+
+                new File(newPath).delete();
+            }
+
+            multipleFilePathResponseDTO.getData().add(multiFileEachResponseDTO);
+        }
+        return ResponseEntity.ok(multipleFilePathResponseDTO);
+    }
+
+    public ResponseEntity<?> decryptMultipleFile(MultiFilePathDTO multiFilePathDTO) {
+
+        MultiFilePathResponseDTO multipleFilePathResponseDTO = new MultiFilePathResponseDTO();
+
+        for (MultiFileEachDTO multiFileEachDTO : multiFilePathDTO.getData()) {
+            MultiFileEachResponseDTO multiFileEachResponseDTO = new MultiFileEachResponseDTO(multiFileEachDTO.getIndex(), multiFileEachDTO.getFileName());
+            if(decryptFileByPathUsingLEA128(multiFileEachDTO.getFileName())) {
+                multiFileEachResponseDTO.setSuccess(true);
+            }else{
+                multiFileEachResponseDTO.setSuccess(false);
+
+                System.gc();
+                String[] split = multiFileEachResponseDTO.getFileName().split("\\\\");
+                String newPath = "";
+                for (int i = 0; i < split.length; i++) {
+                    if (i == split.length - 1)
+                        newPath += File.separator + "Decoding_";
+                    else
+                        newPath += split[i];
+                }
+
+                new File(newPath).delete();
+            }
+
+            multipleFilePathResponseDTO.getData().add(multiFileEachResponseDTO);
+        }
+        return ResponseEntity.ok(multipleFilePathResponseDTO);
+    }
+
 }
