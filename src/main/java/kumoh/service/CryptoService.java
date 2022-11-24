@@ -115,9 +115,7 @@ public class CryptoService {
             encryptPath = fileEncryptionDir.getDir() + "/Encoding_" + file.getName();
         }
         try {
-            long i = System.currentTimeMillis();
             encrypt.file(file, encryptPath, key);
-            System.out.println("파일 암호화 시간 : " + (System.currentTimeMillis() - i));
         } catch (IOException e) {
             throw new RuntimeException("Can not find file path");
         } catch (NoSuchAlgorithmException e) {
@@ -208,6 +206,7 @@ public class CryptoService {
 
             BufferedInputStream in = new BufferedInputStream(mFile.getInputStream());
             BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(requestFilePath + decodingKor(mFile.getOriginalFilename())));
+
             byte[] buff = new byte[32 * 1024];
             int len = 0;
             while ((len = in.read(buff)) > 0) //If necessary readLine()

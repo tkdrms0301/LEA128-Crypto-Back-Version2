@@ -12,10 +12,15 @@ import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.function.Predicate;
+
+import static java.lang.System.in;
+import static org.apache.tomcat.util.codec.binary.Base64.*;
 
 
 @Component
@@ -24,7 +29,7 @@ public class LEA128_CTR_encrypt {
     public static byte[] byteIV;
 
     public static int len = 0; // 블록 갯수
-    public static int byteBlock = 1024 * 1024 * 512; // 읽어들일 바이트 길이
+    public static int byteBlock = 1024 * 1024 * 5; // 읽어들일 바이트 길이
 
     private static byte[] ct1;
 
@@ -85,8 +90,6 @@ public class LEA128_CTR_encrypt {
         return cipher.doFinal(plainBytes);
     }
 
-
-
     // 파일 끊어 읽기
     // 매개변수 : file의 BufferedInputStream, block size
     // return : size 만큼의 ByteArrayOutputStream
@@ -106,18 +109,19 @@ public class LEA128_CTR_encrypt {
         return baos;
     }
 
-
-
     // 파일 암호화
     // 매개변수 : File, encrypt file 저장경로
     // return : 없음
     public void file(File file, String encryptionPath, LEA128_key key) throws IOException, NoSuchAlgorithmException {
+        long nowTime = System.currentTimeMillis(); // 성능측정
+
         Hash hash = new FileHash();
         hash.setHash(file.getAbsolutePath(), "MD5");
         File wFile = new File(encryptionPath);
+
         int totalSize = 0;
         wFile.createNewFile();
-        try (OutputStream out = new FileOutputStream(wFile)) {
+        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(wFile))) {
             encryptSetting(key.getKey());
 
             totalSize = 0;
@@ -131,25 +135,36 @@ public class LEA128_CTR_encrypt {
             // inputStream 상속받은 모든 객체
             try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
 
-                int dividByte = byteBlock; // Block 자체는 1024 * 1024 * 512 (16바이트로 나누는 것은 encrypt 과정에서 진행)
+                int dividByte = byteBlock; // Block 자체는 1024 * 1024 * 5 (16바이트로 나누는 것은 encrypt 과정에서 진행)
                 boolean isTheEnd = true;
                 boolean firstRound = true;
+                BufferedInputStream buif = null;
 
                 do {
-                    try(ByteArrayOutputStream baos = readFromByte(bis, dividByte)) {
+                    try (ByteArrayOutputStream baos = readFromByte(bis, dividByte)) {
+
                         if (baos.size() == 0) // 더이상 읽어들일게 없으면 break
                             break;
                         if (firstRound && (baos.size() < 16)) // 첫번째 라운드에 size 가 16바이트 미만이면 아래 if 문에서 처리
                             break;
                         totalSize += baos.size();
-                        byte[] encrypted = Base64.encodeBase64(encrypt((baos.toByteArray())));
-                        out.write(encrypted); // 16바이트 블록 암호문 블록 삽입
+                        buif = new BufferedInputStream(new ByteArrayInputStream(Base64.encodeBase64(encrypt(baos.toByteArray()))));
                         len++;
                         firstRound = false;
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 } while (isTheEnd);
+
+
+                byte[] buff = new byte[ 64 * 1024 ];
+                int lenn = 0;
+                while ((lenn = buif.read(buff)) > 0) //If necessary readLine()
+                    out.write(buff, 0, lenn);
+
+                bis.close();
+                buif.close();
+                out.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -164,13 +179,13 @@ public class LEA128_CTR_encrypt {
                     if (plainBytesUnder16Index < plainBytesUnder16.length)
                         bytes16[i] = plainBytesUnder16[plainBytesUnder16Index++];
                 }
-                byte[] encryptBytes16 = Base64.encodeBase64(encrypt(bytes16));
+                byte[] encryptBytes16 = encodeBase64(encrypt(bytes16));
 
 
                 out.write(encryptBytes16);
             }
 
-
+            System.out.println("파일 암호화 시간 : " +file.getName()+ (System.currentTimeMillis() - nowTime));
 
         }catch (IOException e){
             e.printStackTrace();
@@ -181,4 +196,3 @@ public class LEA128_CTR_encrypt {
     }
 
 }
-
