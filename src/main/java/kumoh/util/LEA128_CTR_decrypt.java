@@ -21,7 +21,7 @@ public class LEA128_CTR_decrypt {
     public static byte[] byteIV;
 
     public static int len = 0; // 블록 갯수
-    public static int byteBlock = 1024 * 1024 * 512; // 읽어들일 바이트 길이
+    public static int byteBlock = 1024 * 1024 * 30; // 읽어들일 바이트 길이
 
     private DataTypeTranslation dataTypeTranslation;
 
@@ -105,8 +105,10 @@ public class LEA128_CTR_decrypt {
     // 파일 복호화
     // 매개변수 : File, Decrypt 될 파일 경로
     public byte file(File file, String decryptionPath, LEA128_key key) throws IOException, NoSuchAlgorithmException {
+        long nowTime = System.currentTimeMillis(); // 성능측정
+
         File wFile = new File(decryptionPath);
-        len = (int)(file.length() / (1024 * 1024 * 512)) + 1;
+        len = (int)(file.length() / (1024 * 1024 * 30)) + 1;
         wFile.createNewFile();
         OutputStream out = new FileOutputStream(wFile);
         decryptSetting(key.getKey());
@@ -128,7 +130,7 @@ public class LEA128_CTR_decrypt {
                     hashBytes[i] = (byte)bis.read();
                 }
             }
-            
+
             do {
                 ByteArrayOutputStream baos = readFromByte(bis, dividByte);
 
@@ -163,6 +165,7 @@ public class LEA128_CTR_decrypt {
 
         out.close();
         checkHash(wFile, hashBytes);
+        System.out.println("파일 복호화 시간 : " +file.getName() + " " + (System.currentTimeMillis() - nowTime));
         return type;
     }
 

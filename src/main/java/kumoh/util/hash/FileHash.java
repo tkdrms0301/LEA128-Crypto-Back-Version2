@@ -1,5 +1,6 @@
 package kumoh.util.hash;
 
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,8 +25,10 @@ public class FileHash implements Hash{
     public void setHash(String path, String type) {
         MessageDigest messageDigest = getMessageDigest(type); // MD5 or SHA-512
         StringBuffer stringBuffer = new StringBuffer();;
-        try(FileInputStream fileInputStream = getFileInputStream(path)) {
-            readStreamAndUpdateDigest(fileInputStream, messageDigest);
+
+
+        try(BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(path))) {
+            readStreamAndUpdateDigest(bufferedInputStream, messageDigest);
             byte[] mdBytes = messageDigest.digest();
 
             for (byte mdByte : mdBytes) {
@@ -52,14 +55,13 @@ public class FileHash implements Hash{
         }
     }
 
-    private void readStreamAndUpdateDigest(FileInputStream fileInputStream, MessageDigest messageDigest){
+    private void readStreamAndUpdateDigest(BufferedInputStream bufferedInputStream, MessageDigest messageDigest){
         int nRead = 0;
         byte[] dataBytes = new byte[1024];
 
-
         while(true) {
             try {
-                if ((nRead = fileInputStream.read(dataBytes)) == -1) break;
+                if ((nRead = bufferedInputStream.read(dataBytes)) == -1) break;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
