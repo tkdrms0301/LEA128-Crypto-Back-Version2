@@ -118,17 +118,16 @@ public class LEA128_CTR_encrypt {
         File wFile = new File(encryptionPath);
         int totalSize = 0;
         wFile.createNewFile();
-        try (OutputStream out = new FileOutputStream(wFile)) {
+
+        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(wFile))) {
             encryptSetting(key.getKey());
-
+            BufferedInputStream buif = null;
             totalSize = 0;
-
             // 첫 바이트에 타입 구분자 삽입
             out.write(DataTypeTranslation.getTypeInJava(file));
             byte[] hashBytes = convertObjectToBytes(hash.getHash());
             out.write(hashBytes.length);
             out.write(hashBytes);
-
             // inputStream 상속받은 모든 객체
             try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
 
@@ -143,9 +142,7 @@ public class LEA128_CTR_encrypt {
                         if (firstRound && (baos.size() < 16)) // 첫번째 라운드에 size 가 16바이트 미만이면 아래 if 문에서 처리
                             break;
                         totalSize += baos.size();
-                        byte[] encrypted = Base64.encodeBase64(encrypt((baos.toByteArray())));
-                        out.write(encrypted); // 16바이트 블록 암호문 블록 삽입
-                        len++;
+                        out.write(Base64.encodeBase64(encrypt(baos.toByteArray())));
                         firstRound = false;
                     }catch (Exception e){
                         throw new RuntimeException(e);
@@ -164,20 +161,15 @@ public class LEA128_CTR_encrypt {
                     if (plainBytesUnder16Index < plainBytesUnder16.length)
                         bytes16[i] = plainBytesUnder16[plainBytesUnder16Index++];
                 }
-                byte[] encryptBytes16 = Base64.encodeBase64(encrypt(bytes16));
-
-
-                out.write(encryptBytes16);
+                out.write(Base64.encodeBase64(encrypt(bytes16)));
             }
+
             System.out.println("파일 암호화 시간 : " +file.getName() + " " + (System.currentTimeMillis() - nowTime));
-
-
         }catch (IOException e){
             e.printStackTrace();
         }finally {
             System.gc();
         }
-        //crc.addCRCValueWithFile(wFile);
     }
 
 }
