@@ -114,7 +114,12 @@ public class LEA128_CTR_encrypt {
     public void file(File file, String encryptionPath, LEA128_key key) throws IOException, NoSuchAlgorithmException {
         long nowTime = System.currentTimeMillis(); // 성능측정
         Hash hash = new FileHash();
-        hash.setHash(file.getAbsolutePath(), "MD5");
+        if (file.length() >= 1073741824L){
+            hash.setHash(file.getAbsolutePath(), "MD5");
+        }
+        else{
+            hash.setHash(file.getAbsolutePath(), "SHA-256");
+        }
         File wFile = new File(encryptionPath);
         int totalSize = 0;
         wFile.createNewFile();
