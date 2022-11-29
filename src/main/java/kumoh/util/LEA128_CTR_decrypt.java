@@ -171,7 +171,11 @@ public class LEA128_CTR_decrypt {
 
     private void checkHash(File wFile, byte[] hashValue) throws IOException {
         Hash hash = new FileHash();
-        hash.setHash(wFile.getAbsolutePath(), "MD5");
+        if (wFile.length() >= 1073741824L){
+            hash.setHash(wFile.getAbsolutePath(), "MD5");
+        }else{
+            hash.setHash(wFile.getAbsolutePath(), "SHA-256");
+        }
         byte[] decrypteHashValue = convertObjectToBytes(hash.getHash());
         for (int i = 0; i < hashValue.length; i++) {
             if (hashValue[i] != decrypteHashValue[i])

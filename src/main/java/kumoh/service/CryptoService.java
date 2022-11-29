@@ -287,7 +287,7 @@ public class CryptoService {
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
-            saveLog(file.getName(), "author");
+            saveLog(file.getName(), System.getProperty("user.name"));
             return true;
         }else{
             return false;
@@ -305,7 +305,7 @@ public class CryptoService {
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
-            saveLog(file.getName(), "author");
+            saveLog(file.getName(), System.getProperty("user.name"));
             return true;
         }else{
             return false;
